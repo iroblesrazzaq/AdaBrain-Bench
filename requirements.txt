@@ -1,4 +1,3 @@
-```txt
 clip==0.2.0
 
 # Deepspeed frequently fails to build on non-Linux / non-x86_64 and on CPU-only setups.
@@ -37,4 +36,3 @@ transformers==4.43.3
 huggingface_hub==0.24.6
 safetensors==0.4.3
 wandb==0.19.2
-```
