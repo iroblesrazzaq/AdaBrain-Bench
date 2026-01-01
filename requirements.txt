@@ -18,7 +18,7 @@ natsort==8.4.0
 numpy==1.26.4
 pandas==1.5.3
 Pillow==11.3.0
-#pyhealth==1.1.6
+pyhealth==1.1.6
 Requests==2.32.4
 scikit_learn==1.7.0
 scipy==1.16.0
