@@ -1,11 +1,20 @@
+```txt
 clip==0.2.0
-deepspeed==0.17.2
+
+# Deepspeed frequently fails to build on non-Linux / non-x86_64 and on CPU-only setups.
+# Keep it available for Colab/Linux x86_64 without breaking Mac installs.
+deepspeed==0.17.2; platform_system == "Linux" and platform_machine == "x86_64"
+
 einops==0.8.1
 h5py==3.13.0
 linear_attention_transformer==0.19.1
 lmdb==1.7.2
 matplotlib==3.10.3
-mne==1.10.0
+
+# MNE: keep your original pin where it works, but allow Py3.12 (Colab) to install.
+mne==1.10.0; python_version < "3.12"
+mne>=1.11.0; python_version >= "3.12"
+
 natsort==8.4.0
 numpy==1.26.4
 pandas==1.5.3
@@ -16,12 +25,16 @@ scikit_learn==1.7.0
 scipy==1.16.0
 tensorboardX==2.6.4
 timm==0.4.12
-torch==2.4.0; platform_system == "Darwin"
-torch==2.4.0+cu118; platform_system != "Darwin"
-torchvision==0.19.0; platform_system == "Darwin"
-torchvision==0.19.0+cu118; platform_system != "Darwin"
+
+# Flexible torch pins:
+# - Avoid CUDA suffixes (+cu###) so the same file works on Mac and Colab.
+# - Ranges let Colab's preinstalled CUDA torch satisfy requirements without overwriting.
+torch>=2.4.0,<2.6
+torchvision>=0.19.0,<0.21
+
 tqdm==4.67.1
 transformers==4.43.3
 huggingface_hub==0.24.6
 safetensors==0.4.3
 wandb==0.19.2
+```
