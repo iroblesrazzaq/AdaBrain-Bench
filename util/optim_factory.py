@@ -17,7 +17,7 @@ from timm.optim.lookahead import Lookahead
 # DEPRECATED: from timm.optim.nadam import Nadam
 from torch.optim import NAdam
 from timm.optim.nvnovograd import NvNovoGrad
-from timm.optim.radam import RAdamLegacy
+from torch.optim import RAdam
 from timm.optim.rmsprop_tf import RMSpropTF
 from timm.optim.sgdp import SGDP
 
@@ -145,7 +145,7 @@ def create_optimizer(args, model, get_num_layer=None, get_layer_scale=None, filt
     elif opt_lower == 'nadam':
         optimizer = Nadam(parameters, **opt_args)
     elif opt_lower == 'radam':
-        optimizer = RAdamLegacy(parameters, **opt_args)
+        optimizer = RAdam(parameters, **opt_args)
     elif opt_lower == 'adamp':
         optimizer = AdamP(parameters, wd_ratio=0.01, nesterov=True, **opt_args)
     elif opt_lower == 'sgdp':
