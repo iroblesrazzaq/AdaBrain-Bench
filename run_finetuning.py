@@ -40,6 +40,7 @@ from models.LMDA import LMDA
 from models.EEGConformer import Conformer
 from models.EEGTransformer import STTransformer
 from models.loss import ClipLoss
+from models.reve import Ada_REVE
 
 from torch.utils.data import random_split, ConcatDataset
 
@@ -60,7 +61,7 @@ def get_args():
                         choices=['SEED', 'SEED-IV', 'BCI-IV-2A', 'SHU', 'SEED-VIG', 'EEGMAT',
                                  'Sleep-EDF', 'HMC', 'SHHS', 'TUAB', 'TUEV', 'Things-EEG'])
     parser.add_argument('--model_name', default='LaBraM', type=str,
-                        choices=['LaBraM', 'CBraMod', 'EEGPT', 'BIOT', 'EEGNet', 'LMDA', 'EEGConformer', 'ST-Transformer'])
+                        choices=['LaBraM', 'CBraMod', 'EEGPT', 'BIOT', 'EEGNet', 'LMDA', 'EEGConformer', 'ST-Transformer', 'REVE'])
     parser.add_argument('--task_mod', default="Classification", type=str, choices=['Classification', 'Regression', 'Retrieval'],
                         help='type of task')
     parser.add_argument('--subject_mod', default="multi", type=str, choices=['multi', 'cross', 'fewshot', 'single'],
@@ -90,6 +91,11 @@ def get_args():
     parser.add_argument('--mv_norm_value', default=0.01, type=float,
                         help='scale_value when using 0.1mv norm_method, default is 0.01.')
     parser.add_argument('--subject_id', type=int, default=1, help='subject id for single subject retrieval task')
+    parser.add_argument('--reve_model_id', default='brain-bzh/reve-base', type=str, help='HF model id for REVE backbone')
+    parser.add_argument('--reve_pos_id', default='brain-bzh/reve-positions', type=str, help='HF model id for REVE position bank')
+    parser.add_argument('--reve_pool', default='mean', type=str, choices=['mean', 'first'],
+                        help='pooling for REVE when features are 3D (mean or first token)')
+    parser.add_argument('--dry_run', action='store_true', default=False, help='run a single batch then exit')
 
     # Optimizer parameters
     parser.add_argument('--lr', type=float, default=1e-4, metavar='LR', help='learning rate (default: 5e-4)')
@@ -499,6 +505,27 @@ def get_models(args, ch_names, num_t):
             model.task_head = RegressionLayers(input_dim=256, hidden_dim=256, output_dim=1)
         elif args.task_mod == 'Retrieval':
             model.task_head = LinearWithConstraint(256, 1024, max_norm=1)
+    elif args.model_name == 'REVE':
+        model = Ada_REVE(args, ch_names=ch_names)
+        embed_dim = None
+        if hasattr(model.main_model, "config") and hasattr(model.main_model.config, "hidden_size"):
+            embed_dim = model.main_model.config.hidden_size
+        if embed_dim is None:
+            was_training = model.training
+            model.eval()
+            dummy_t = min(num_t, 200)
+            with torch.no_grad():
+                dummy = torch.zeros(2, len(ch_names), dummy_t)
+                dummy_out = model(dummy)
+            if was_training:
+                model.train()
+            embed_dim = dummy_out.shape[-1]
+        if args.task_mod == 'Classification':
+            model.task_head = LinearWithConstraint(embed_dim, args.nb_classes, max_norm=1)
+        elif args.task_mod == 'Regression':
+            model.task_head = RegressionLayers(input_dim=embed_dim, hidden_dim=256, output_dim=1)
+        elif args.task_mod == 'Retrieval':
+            model.task_head = LinearWithConstraint(embed_dim, 1024, max_norm=1)
     else:
         print("Unknown model name!")
         exit(0)
@@ -671,6 +698,29 @@ def main(args, ds_init):
     model.to(device)
     # model_ema = None
     model_without_ddp = model
+
+    if args.dry_run:
+        model.eval()
+        batch = next(iter(data_loader_train))
+        samples = batch[0] if isinstance(batch, (list, tuple)) else batch
+        samples = samples.to(device)
+        with torch.no_grad():
+            outputs = model(samples)
+        print(f"{samples.shape} -> {outputs.shape}")
+        if outputs.dim() == 1:
+            outputs = outputs.unsqueeze(1)
+        if args.task_mod == 'Classification':
+            expected_dim = args.nb_classes
+        elif args.task_mod == 'Regression':
+            expected_dim = 1
+        elif args.task_mod == 'Retrieval':
+            expected_dim = 1024
+        else:
+            expected_dim = outputs.shape[-1]
+        assert outputs.dim() == 2, "Expected 2D outputs for dry run."
+        assert outputs.shape[0] == samples.shape[0], "Batch dimension mismatch in dry run."
+        assert outputs.shape[1] == expected_dim, "Output dimension mismatch in dry run."
+        return
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
 

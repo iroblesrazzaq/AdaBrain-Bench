@@ -132,6 +132,29 @@ We provide the links of the pre-trained weights for the following models. You ca
 
 To integrate a new model, see [ADD_MODEL.md](ADD_MODEL.md) for step-by-step instructions.
 
+## REVE
+
+REVE uses Hugging Face Transformers and may require access approval for `brain-bzh/reve-base`.
+
+Install dependencies (already included in `requirements.txt`):
+```bash
+pip install transformers huggingface_hub safetensors
+```
+
+If the model is gated for your account, authenticate once:
+```bash
+huggingface-cli login
+```
+
+Example runs:
+```bash
+python run_finetuning.py --model_name REVE --dataset BCI-IV-2A --task_mod Classification --subject_mod cross --finetune_mod full --norm_method z_score --batch_size 64 --epochs 50 --lr 1e-3 --sampling_rate 200 --seed 0
+```
+
+```bash
+python run_finetuning.py --model_name REVE --dataset SEED-VIG --task_mod Regression --subject_mod cross --finetune_mod linear --norm_method z_score --batch_size 64 --epochs 50 --lr 1e-3 --sampling_rate 200 --seed 0
+```
+
 ## Running
 ### Run Classification
 After preparing the JSON file, you only need to execute a single command in the command line, to run the Classification task.
