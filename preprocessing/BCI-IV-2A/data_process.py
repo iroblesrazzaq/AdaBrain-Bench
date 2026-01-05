@@ -6,6 +6,8 @@ import os
 import sys
 
 
+NUM_SUBJECTS = 9
+
 data_root = sys.argv[1]  
 print(f"Data root: {data_root}")
 raw_data_path = os.path.join(data_root,'BCI-IV-2A/raw_data')
@@ -57,7 +59,7 @@ def save_event_to_pkl(X, Y, save_dir, subject):
         event_count += 1
 
 ##!
-for i in range(1):
+for i in range(NUM_SUBJECTS):
     subject = i + 1
     print(subject)
     path1 = raw_data_path + '/A0' + str(subject) + 'T.mat'
