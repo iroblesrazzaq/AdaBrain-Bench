@@ -1,15 +1,14 @@
 # TODO:
-- Finish downloading SHHS
+- Figure out SHHS download - have ~100 files left, keep getting api blocked
 - Preprocess all
 
-
+- skipping SHHS for now
 
 Requested Permission, download later:
 - SEED, SEED-IV, SEED-VIG
-- SHU (need password)
-- TUEV, TUAB
 
-
+Finish Downloading:
+- SHHS (annoying)
 
 
 Downloaded + Formatted(✅):
@@ -19,3 +18,18 @@ Downloaded + Formatted(✅):
 - Siena ✅
 - HMC ✅
 - Sleep-EDF ✅
+- SHU ✅
+- TUAB ✅
+- TUEV ✅
+
+
+Preprocessed:
+- EEGMAT ✅
+- BCI-IV-2A ✅
+- HMC ✅
+- SHU ✅
+- TUEV ✅
+- Siena ✅
+- Sleep-EDF 
+- Things-EEG 
+- TUAB 
