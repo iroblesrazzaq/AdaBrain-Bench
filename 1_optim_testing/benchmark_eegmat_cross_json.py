@@ -79,6 +79,12 @@ def main():
     parser.add_argument("--data-root", required=True, help="Path to the data root (contains EEGMAT/processed_data).")
     parser.add_argument("--repo-root", default=os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument(
+        "--mode",
+        choices=["baseline", "optim", "both"],
+        default="both",
+        help="Which script(s) to run.",
+    )
     args = parser.parse_args()
 
     base_script = os.path.join(args.repo_root, "preprocessing", "EEGMAT", "cross_json_process.py")
@@ -91,40 +97,47 @@ def main():
     if not os.path.exists(optim_script):
         raise FileNotFoundError(f"Missing optimized script: {optim_script}")
 
-    print("Running baseline...")
     base_times = []
-    for i in range(args.runs):
-        elapsed = run_once(base_script, args.data_root, args.repo_root, base_output)
-        base_times.append(elapsed)
-        print(f"  baseline run {i + 1}: {elapsed:.2f}s")
+    if args.mode in ("baseline", "both"):
+        print("Running baseline...")
+        for i in range(args.runs):
+            elapsed = run_once(base_script, args.data_root, args.repo_root, base_output)
+            base_times.append(elapsed)
+            print(f"  baseline run {i + 1}: {elapsed:.2f}s")
 
-    print("Running optimized...")
     optim_times = []
-    for i in range(args.runs):
-        elapsed = run_once(optim_script, args.data_root, args.repo_root, optim_output)
-        optim_times.append(elapsed)
-        print(f"  optim run {i + 1}: {elapsed:.2f}s")
+    if args.mode in ("optim", "both"):
+        print("Running optimized...")
+        for i in range(args.runs):
+            elapsed = run_once(optim_script, args.data_root, args.repo_root, optim_output)
+            optim_times.append(elapsed)
+            print(f"  optim run {i + 1}: {elapsed:.2f}s")
 
     print("\nTiming summary (seconds):")
-    print(f"  baseline: {base_times}")
-    print(f"  optim:    {optim_times}")
+    if base_times:
+        print(f"  baseline: {base_times}")
+    if optim_times:
+        print(f"  optim:    {optim_times}")
 
-    print("\nComparing outputs...")
-    all_match = True
-    for split in ["train.json", "val.json", "test.json"]:
-        base_path = os.path.join(base_output, split)
-        optim_path = os.path.join(optim_output, split)
-        match, detail = compare_jsons(base_path, optim_path)
-        status = "MATCH" if match else "MISMATCH"
-        print(f"  {split}: {status}")
-        if detail:
-            print(f"    {detail}")
-        all_match = all_match and match
+    if args.mode == "both":
+        print("\nComparing outputs...")
+        all_match = True
+        for split in ["train.json", "val.json", "test.json"]:
+            base_path = os.path.join(base_output, split)
+            optim_path = os.path.join(optim_output, split)
+            match, detail = compare_jsons(base_path, optim_path)
+            status = "MATCH" if match else "MISMATCH"
+            print(f"  {split}: {status}")
+            if detail:
+                print(f"    {detail}")
+            all_match = all_match and match
 
-    if all_match:
-        print("\nAll outputs match.")
+        if all_match:
+            print("\nAll outputs match.")
+        else:
+            print("\nOutputs differ. See mismatch details above.")
     else:
-        print("\nOutputs differ. See mismatch details above.")
+        print("\nComparison skipped (mode is not 'both').")
 
 
 if __name__ == "__main__":
