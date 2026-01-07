@@ -8,13 +8,22 @@ import time
 from math import isclose
 
 
-def run_once(script_path, data_root, repo_root, output_dir):
+def run_once(script_path, data_root, repo_root, output_dir, timing_path=None):
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
+    env = os.environ.copy()
+    if timing_path:
+        env["EEGMAT_TIMING_PATH"] = timing_path
+        if os.path.exists(timing_path):
+            os.remove(timing_path)
     start = time.perf_counter()
-    subprocess.run([sys.executable, script_path, data_root], check=True, cwd=repo_root)
+    subprocess.run([sys.executable, script_path, data_root], check=True, cwd=repo_root, env=env)
     end = time.perf_counter()
-    return end - start
+    timing = None
+    if timing_path and os.path.exists(timing_path):
+        with open(timing_path, "r") as f:
+            timing = json.load(f)
+    return end - start, timing
 
 
 def sort_subject_data(subject_data):
@@ -98,19 +107,39 @@ def main():
         raise FileNotFoundError(f"Missing optimized script: {optim_script}")
 
     base_times = []
+    base_timings = []
     if args.mode in ("baseline", "both"):
         print("Running baseline...")
         for i in range(args.runs):
-            elapsed = run_once(base_script, args.data_root, args.repo_root, base_output)
+            timing_path = os.path.join(args.repo_root, "1_optim_testing", f"timing_baseline_run{i + 1}.json")
+            elapsed, timing = run_once(
+                base_script,
+                args.data_root,
+                args.repo_root,
+                base_output,
+                timing_path=timing_path,
+            )
             base_times.append(elapsed)
+            if timing:
+                base_timings.append(timing)
             print(f"  baseline run {i + 1}: {elapsed:.2f}s")
 
     optim_times = []
+    optim_timings = []
     if args.mode in ("optim", "both"):
         print("Running optimized...")
         for i in range(args.runs):
-            elapsed = run_once(optim_script, args.data_root, args.repo_root, optim_output)
+            timing_path = os.path.join(args.repo_root, "1_optim_testing", f"timing_optim_run{i + 1}.json")
+            elapsed, timing = run_once(
+                optim_script,
+                args.data_root,
+                args.repo_root,
+                optim_output,
+                timing_path=timing_path,
+            )
             optim_times.append(elapsed)
+            if timing:
+                optim_timings.append(timing)
             print(f"  optim run {i + 1}: {elapsed:.2f}s")
 
     print("\nTiming summary (seconds):")
@@ -118,6 +147,41 @@ def main():
         print(f"  baseline: {base_times}")
     if optim_times:
         print(f"  optim:    {optim_times}")
+
+    def print_breakdown(label, total_times, timings):
+        if not total_times or not timings:
+            return
+        print(f"\n{label} timing breakdown:")
+        for i, total in enumerate(total_times):
+            if i >= len(timings):
+                continue
+            io_seconds = timings[i].get("io_seconds", 0.0)
+            stats_seconds = timings[i].get("stats_seconds", 0.0)
+            other_seconds = total - io_seconds - stats_seconds
+            files = timings[i].get("files", 0)
+            print(
+                f"  run {i + 1}: total={total:.2f}s io={io_seconds:.2f}s "
+                f"stats={stats_seconds:.2f}s other={other_seconds:.2f}s files={files}"
+            )
+
+    print_breakdown("Baseline", base_times, base_timings)
+    print_breakdown("Optim", optim_times, optim_timings)
+
+    if args.mode == "both" and base_timings and optim_timings:
+        print("\nImprovement summary (baseline - optim, seconds):")
+        count = min(len(base_timings), len(optim_timings), len(base_times), len(optim_times))
+        for i in range(count):
+            base_io = base_timings[i].get("io_seconds", 0.0)
+            base_stats = base_timings[i].get("stats_seconds", 0.0)
+            base_other = base_times[i] - base_io - base_stats
+            optim_io = optim_timings[i].get("io_seconds", 0.0)
+            optim_stats = optim_timings[i].get("stats_seconds", 0.0)
+            optim_other = optim_times[i] - optim_io - optim_stats
+            print(
+                f"  run {i + 1}: io={base_io - optim_io:.2f}s "
+                f"stats={base_stats - optim_stats:.2f}s other={base_other - optim_other:.2f}s "
+                f"total={base_times[i] - optim_times[i]:.2f}s"
+            )
 
     if args.mode == "both":
         print("\nComparing outputs...")
