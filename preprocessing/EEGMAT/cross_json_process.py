@@ -6,34 +6,21 @@ from natsort import natsorted
 from collections import defaultdict
 import random
 import sys
-import time
 
-data_root = sys.argv[1]  
+data_root = sys.argv[1]
 print(f"Data root: {data_root}")
-processed_data_path = os.path.join(data_root,'EEGMAT/processed_data')
+processed_data_path = os.path.join(data_root, 'EEGMAT/processed_data')
 data_split_path = './preprocessing/EEGMAT/cross_subject_json'
 os.makedirs(data_split_path, exist_ok=True)
 save_train_path = os.path.join(data_split_path, 'train.json')
 save_val_path = os.path.join(data_split_path, 'val.json')
 save_test_path = os.path.join(data_split_path, 'test.json')
 
-
-
-
-# data_folder = "./Preprocessing/EDMAT/processed_data"
-# os.makedirs('./Preprocessing/EDMAT/cross_subject_json', exist_ok=True)
-# save_folder_train = './Preprocessing/EDMAT/cross_subject_json/train.json'
-# save_folder_val = './Preprocessing/EDMAT/cross_subject_json/val.json'
-# save_folder_test = './Preprocessing/EDMAT/cross_subject_json/test.json'
-
 sampling_rate = 500
 ch_names = ['Fp1', 'Fp2', 'F3', 'F4', 'F7', 'F8', 'T3', 'T4', 'C3', 'C4',
             'T5', 'T6', 'P3', 'P4', 'O1', 'O2', 'Fz', 'Cz', 'Pz']
 num_channels = len(ch_names)
 random.seed(42)
-timing_path = os.environ.get("EEGMAT_TIMING_PATH")
-timing_enabled = timing_path is not None
-timing = {"io_seconds": 0.0, "stats_seconds": 0.0, "files": 0}
 
 
 def load_subject_data(subject_folder):
@@ -44,12 +31,8 @@ def load_subject_data(subject_folder):
 
     for file in natsorted(f for f in os.listdir(subject_folder) if f.endswith('.pkl')):
         try:
-            load_start = time.perf_counter() if timing_enabled else None
             with open(os.path.join(subject_folder, file), 'rb') as f:
                 eeg_data = pickle.load(f)
-            if timing_enabled:
-                timing["io_seconds"] += time.perf_counter() - load_start
-                timing["files"] += 1
             subject_data.append({
                 "subject_id": subject_num,
                 "subject_name": subject_name,
@@ -79,21 +62,17 @@ def split_subject_data(subject_data, val_ratio=0.2):
 
 
 def compute_normalization_params(data_list):
-    """Compute normalization parameters"""
+    """Compute normalization parameters."""
     total_mean = np.zeros(num_channels)
     total_std = np.zeros(num_channels)
     max_val, min_val = -np.inf, np.inf
 
-    stats_start = time.perf_counter() if timing_enabled else None
     for data in data_list:
         eeg = data["eeg_data"]
+        total_mean += eeg.mean(axis=1)
+        total_std += eeg.std(axis=1)
         max_val = max(max_val, eeg.max())
         min_val = min(min_val, eeg.min())
-        for j in range(num_channels):
-            total_mean[j] += eeg[j].mean()
-            total_std[j] += eeg[j].std()
-    if timing_enabled:
-        timing["stats_seconds"] += time.perf_counter() - stats_start
 
     mean = (total_mean / len(data_list)).tolist()
     std = (total_std / len(data_list)).tolist()
@@ -123,8 +102,11 @@ def save_dataset(data_list, save_path, norm_params=None):
 
 
 def main():
-    total_start = time.perf_counter() if timing_enabled else None
-    subject_folders = natsorted(os.path.join(processed_data_path, f) for f in os.listdir(processed_data_path) if f.startswith("Subject"))
+    subject_folders = natsorted(
+        os.path.join(processed_data_path, f)
+        for f in os.listdir(processed_data_path)
+        if f.startswith("Subject")
+    )
     train_subjects = [s for s in subject_folders if int(os.path.basename(s)[7:]) <= 31]
     test_subjects = [s for s in subject_folders if int(os.path.basename(s)[7:]) > 31]
 
@@ -141,13 +123,9 @@ def main():
 
     norm_params = compute_normalization_params(all_train_data)
 
-    save_dataset(all_train_data, save_train_path)
+    save_dataset(all_train_data, save_train_path, norm_params)
     save_dataset(all_val_data, save_val_path, norm_params)
     save_dataset(all_test_data, save_test_path, norm_params)
-    if timing_enabled:
-        timing["total_seconds"] = time.perf_counter() - total_start
-        with open(timing_path, "w") as f:
-            json.dump(timing, f)
 
 
 if __name__ == "__main__":

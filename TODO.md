@@ -1,4 +1,7 @@
 # TODO:
+- make dataset jsons
+
+Later:
 - Figure out SHHS download - have ~100 files left, keep getting api blocked
 - Preprocess all
 
@@ -33,3 +36,21 @@ Preprocessed:
 - Sleep-EDF 
 - Things-EEG 
 - TUAB 
+
+
+Splits created:
+- EEGMAT ✅
+- BCI-IV-2A ✅
+- HMC ✅
+- SHU ✅
+
+
+
+
+
+# Improvements:
+- bug fixes: 
+    - BCI-4-2A -> BCI-IV-2A dataset naming consistency
+    - standardized preprocessed directory and file naming structure to fix errors for Siena, TUEV, and SHU datasets
+- 56% average speedup in json train/test/val split creation script processing
+- memory safe file loading

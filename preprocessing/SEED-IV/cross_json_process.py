@@ -77,9 +77,8 @@ def compute_normalization_params(data_list):
         eeg = data["eeg_data"]
         max_val = max(max_val, eeg.max())
         min_val = min(min_val, eeg.min())
-        for j in range(num_channels):
-            total_mean[j] += eeg[j].mean()
-            total_std[j] += eeg[j].std()
+        total_mean += eeg.mean(axis=1)
+        total_std += eeg.std(axis=1)
 
     mean = (total_mean / len(data_list)).tolist()
     std = (total_std / len(data_list)).tolist()

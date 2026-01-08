@@ -51,7 +51,8 @@ for folder_id, per_folder in enumerate(subject_folder):
         subject_name = str(pkl_file.split("/")[-1].split(".")[0].split("_")[0][1:])
         trial_num = int(pkl_file.split("/")[-1].split(".")[0].split("_")[2])
         try:
-            eeg_data = pickle.load(open(pkl_file, "rb"))
+            with open(pkl_file, "rb") as f:
+                eeg_data = pickle.load(f)
             eeg = eeg_data['X']
             label = eeg_data['Y']
         except Exception as e:
@@ -66,15 +67,14 @@ for folder_id, per_folder in enumerate(subject_folder):
         }
         
         if trial_num < 10:
-            per_max_value = max(eeg.reshape(-1))
+            per_max_value = eeg.max()
             if per_max_value > max_value:
                 max_value = per_max_value
-            per_min_value = min(eeg.reshape(-1))
+            per_min_value = eeg.min()
             if per_min_value < min_value:
                 min_value = per_min_value
-            for j in range(num_channels):
-                total_mean[j] += eeg[j].mean()
-                total_std[j] += eeg[j].std()
+            total_mean += eeg.mean(axis=1)
+            total_std += eeg.std(axis=1)
             num_all += 1
 
         if trial_num < 10:

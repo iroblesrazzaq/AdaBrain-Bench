@@ -63,7 +63,7 @@ for i in range(25):
             eeg_trial = data1[trial, :, :]
             eeg_trial = bandpass_filter(eeg_trial, lowcut=0.1, highcut=75.0, fs=250)
             eeg_trial = notch_filter(eeg_trial, freq=50.0, fs=250)
-            save_dir = processed_data_path + str(subject) + '/'
+            save_dir = os.path.join(processed_data_path, str(subject))
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             file_name = os.path.join(save_dir,  str(subject) + '_' + str(session) + '_' + str(trial+1) + '.pkl')

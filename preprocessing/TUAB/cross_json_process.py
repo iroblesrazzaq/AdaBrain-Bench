@@ -38,38 +38,29 @@ num_all = 0
 max_value = -1
 min_value = 1e6
 
-def is_23_channels(pkl_file):
-    try:
-        eeg_data = pickle.load(open(pkl_file, "rb"))
-        eeg = eeg_data['X']
-        return eeg.shape[0] == 23
-    except Exception as e:
-        print(f"Error loading file {pkl_file}: {e}")
-        return False
-
 train_files = natsorted([os.path.join(train_folder, f) for f in os.listdir(train_folder) if f.endswith('.pkl')])
 tuples_list_train = []
 subject_id_counter = 0
 subject_id_map = {}
 
 for file in train_files:
-    if not is_23_channels(file):
-        continue
     try:
-        eeg_data = pickle.load(open(file, "rb"))
+        with open(file, "rb") as f:
+            eeg_data = pickle.load(f)
         label = eeg_data['Y']
         eeg = eeg_data['X']
+        if eeg.shape[0] != 23:
+            continue
         subject_folder = os.path.basename(file)[:8]
         if subject_folder not in subject_id_map:
             subject_id_map[subject_folder] = subject_id_counter
             subject_id_counter += 1
         # Calculate normalization parameters.
-        for j in range(num_channels):
-            total_mean[j] += eeg[j].mean()
-            total_std[j] += eeg[j].std()
+        total_mean += eeg.mean(axis=1)
+        total_std += eeg.std(axis=1)
         num_all += 1
-        per_max_value = max(eeg.reshape(-1))
-        per_min_value = min(eeg.reshape(-1))
+        per_max_value = eeg.max()
+        per_min_value = eeg.min()
         if per_max_value > max_value:
             max_value = per_max_value
         if per_min_value < min_value:
@@ -106,12 +97,13 @@ val_files = natsorted([os.path.join(val_folder, f) for f in os.listdir(val_folde
 tuples_list_val = []
 
 for file in val_files:
-    if not is_23_channels(file):
-        continue
     try:
-        eeg_data = pickle.load(open(file, "rb"))
+        with open(file, "rb") as f:
+            eeg_data = pickle.load(f)
         label = eeg_data['Y']
         eeg = eeg_data['X']
+        if eeg.shape[0] != 23:
+            continue
         subject_folder = os.path.basename(file)[:8]
         if subject_folder not in subject_id_map:
             subject_id_map[subject_folder] = subject_id_counter
@@ -146,17 +138,18 @@ tuples_list_test = []
 error_list = []
 
 for file in eval_files:
-    if not is_23_channels(file):
-        continue
     try:
         data_name = os.path.basename(file)[:8]
         if data_name not in subject_id_map:
             subject_id_map[data_name] = subject_id_counter
             subject_id_counter += 1
         subject_id = subject_id_map[data_name]
-        eeg_data = pickle.load(open(file, "rb"))
+        with open(file, "rb") as f:
+            eeg_data = pickle.load(f)
         label = eeg_data['Y']
         eeg = eeg_data['X']
+        if eeg.shape[0] != 23:
+            continue
         data = {
             "subject_id": subject_id,
             "subject_name": data_name,
