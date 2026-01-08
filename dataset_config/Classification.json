@@ -1,0 +1,41 @@
+{
+  "EEGMAT": {
+    "root": {
+      "cross": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/EEGMAT/cross_subject_json"
+    },
+    "num_classes": 2,
+    "num_t": 4
+  },
+  "BCI-IV-2A": {
+    "root": {
+      "multi": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/BCI-IV-2A/multi_subject_json",
+      "cross": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/BCI-IV-2A/cross_subject_json",
+      "fewshot": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/BCI-IV-2A/multi_subject_json"
+    },
+    "num_classes": 4,
+    "num_t": 4
+  },
+  "SHU": {
+    "root": {
+      "multi": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/SHU/multi_subject_json",
+      "cross": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/SHU/cross_subject_json",
+      "fewshot": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/SHU/multi_subject_json"
+    },
+    "num_classes": 2,
+    "num_t": 4
+  },
+  "Siena": {
+    "root": {
+      "cross": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/Siena/cross_subject_json"
+    },
+    "num_classes": 2,
+    "num_t": 10
+  },
+  "HMC": {
+    "root": {
+      "cross": "/content/drive/MyDrive/AdaBrain-Bench Data/preprocessing/HMC/cross_subject_json"
+    },
+    "num_classes": 5,
+    "num_t": 30
+  }
+}

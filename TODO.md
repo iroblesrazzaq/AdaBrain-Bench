@@ -1,5 +1,4 @@
 # TODO:
-- make dataset jsons
 
 Later:
 - Figure out SHHS download - have ~100 files left, keep getting api blocked
@@ -43,6 +42,7 @@ Splits created:
 - BCI-IV-2A ✅
 - HMC ✅
 - SHU ✅
+- Siena ✅
 
 
 
