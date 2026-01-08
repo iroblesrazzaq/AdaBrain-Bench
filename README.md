@@ -27,7 +27,7 @@ AdaBrain-Bench provides code for evaluating EEG foundation models across **13 da
 - [Installation](#installation)
 - [Dataset preparation](#dataset-preparation)
 - [Models](#models)
-- [Runing](#running)
+- [Running](#running)
 
 
 
