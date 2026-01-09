@@ -380,6 +380,7 @@ class Ada_EEGNet(nn.Module):
         model = EEGNet(chans=len(ch_names), classes=args.nb_classes, time_points=num_t * 200)
         model.fc = nn.Identity()
         self.main_model = model
+        self.linear_size = model.linear_size
 
         self.task_head=nn.Identity()
 
