@@ -41,6 +41,7 @@ from models.EEGConformer import Conformer
 from models.EEGTransformer import STTransformer
 from models.loss import ClipLoss
 from models.reve import Ada_REVE
+import models.modeling_finetune  # Register LaBraM variants with timm.
 
 from torch.utils.data import random_split, ConcatDataset
 
