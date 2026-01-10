@@ -509,19 +509,7 @@ def get_models(args, ch_names, num_t):
             model.task_head = LinearWithConstraint(256, 1024, max_norm=1)
     elif args.model_name == 'REVE':
         model = Ada_REVE(args, ch_names=ch_names)
-        embed_dim = None
-        if hasattr(model.main_model, "config") and hasattr(model.main_model.config, "hidden_size"):
-            embed_dim = model.main_model.config.hidden_size
-        if embed_dim is None:
-            was_training = model.training
-            model.eval()
-            dummy_t = min(num_t, 200)
-            with torch.no_grad():
-                dummy = torch.zeros(2, len(ch_names), dummy_t)
-                dummy_out = model(dummy)
-            if was_training:
-                model.train()
-            embed_dim = dummy_out.shape[-1]
+        embed_dim = 512
         if args.task_mod == 'Classification':
             model.task_head = LinearWithConstraint(embed_dim, args.nb_classes, max_norm=1)
         elif args.task_mod == 'Regression':
