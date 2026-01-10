@@ -60,14 +60,19 @@ class Ada_REVE(nn.Module):
         return None
 
     def _call_backbone(self, x, positions):
-        if positions is not None:
-            try:
-                return self.main_model(x, positions=positions)
-            except TypeError as exc:
-                message = str(exc)
-                if "unexpected keyword" not in message and "positional" not in message:
-                    raise
-        return self.main_model(x)
+        try:
+            return self.main_model(x, positions=positions)
+        except TypeError as exc:
+            message = str(exc)
+            if "unexpected keyword" in message or "pos" in message or "positions" in message:
+                try:
+                    return self.main_model(x, positions)
+                except TypeError:
+                    if positions is None:
+                        return self.main_model(x, None)
+            if positions is None and "missing 1 required positional argument" in message:
+                return self.main_model(x, None)
+            raise
 
     def _extract_features(self, output):
         if hasattr(output, "last_hidden_state"):
