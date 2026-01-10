@@ -84,11 +84,26 @@ class Ada_REVE(nn.Module):
         raise ValueError("Unsupported output type from REVE backbone.")
 
     def _pool_features(self, features):
-        if features.dim() == 3:
-            if self.reve_pool == "mean":
+        if features.dim() >= 3:
+            pool = self.reve_pool
+            if pool in ("mean", "mean_cp"):
+                dims = tuple(range(1, features.dim() - 1))
+                features = features.mean(dim=dims)
+            elif pool == "mean_c":
+                if features.dim() < 4:
+                    raise ValueError("mean_c pooling requires channel dimension.")
                 features = features.mean(dim=1)
-            elif self.reve_pool == "first":
-                features = features[:, 0]
+            elif pool == "mean_p":
+                if features.dim() < 4:
+                    raise ValueError("mean_p pooling requires patch dimension.")
+                features = features.mean(dim=2)
+            elif pool == "first":
+                if features.dim() == 3:
+                    features = features[:, 0]
+                else:
+                    features = features[:, 0, 0]
+            elif pool == "flatten":
+                features = features.flatten(1)
             else:
                 raise ValueError(f"Unsupported reve_pool: {self.reve_pool}")
         if features.dim() == 1:

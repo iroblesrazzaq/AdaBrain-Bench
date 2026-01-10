@@ -94,8 +94,9 @@ def get_args():
     parser.add_argument('--subject_id', type=int, default=1, help='subject id for single subject retrieval task')
     parser.add_argument('--reve_model_id', default='brain-bzh/reve-base', type=str, help='HF model id for REVE backbone')
     parser.add_argument('--reve_pos_id', default='brain-bzh/reve-positions', type=str, help='HF model id for REVE position bank')
-    parser.add_argument('--reve_pool', default='mean', type=str, choices=['mean', 'first'],
-                        help='pooling for REVE when features are 3D (mean or first token)')
+    parser.add_argument('--reve_pool', default='mean', type=str,
+                        choices=['mean', 'mean_cp', 'mean_c', 'mean_p', 'first', 'flatten'],
+                        help='pooling for REVE: mean/mean_cp, mean_c, mean_p, first, or flatten')
     parser.add_argument('--dry_run', action='store_true', default=False, help='run a single batch then exit')
 
     # Optimizer parameters
@@ -510,12 +511,41 @@ def get_models(args, ch_names, num_t):
     elif args.model_name == 'REVE':
         model = Ada_REVE(args, ch_names=ch_names)
         embed_dim = 512
+        pool = args.reve_pool
+        if pool == "mean":
+            pool = "mean_cp"
+        head_in = embed_dim
+        num_patches = None
+        if pool in ("mean_c", "flatten"):
+            patch_size = getattr(model.main_model, "patch_size", None)
+            overlap_size = getattr(model.main_model, "overlap_size", None)
+            if hasattr(model.main_model, "config"):
+                patch_size = getattr(model.main_model.config, "patch_size", patch_size)
+                overlap_size = getattr(model.main_model.config, "overlap_size", overlap_size)
+            if patch_size is None:
+                raise NotImplementedError("REVE pooling requires patch_size to be set.")
+            if overlap_size is None:
+                overlap_size = 0
+            step = patch_size - overlap_size
+            if step <= 0:
+                raise NotImplementedError("REVE pooling requires a positive patch step.")
+            total_t = int(num_t * args.sampling_rate)
+            if total_t < patch_size:
+                num_patches = 1
+            else:
+                num_patches = 1 + (total_t - patch_size) // step
+        if pool == "mean_c":
+            head_in = num_patches * embed_dim
+        elif pool == "mean_p":
+            head_in = len(ch_names) * embed_dim
+        elif pool == "flatten":
+            head_in = len(ch_names) * num_patches * embed_dim
         if args.task_mod == 'Classification':
-            model.task_head = LinearWithConstraint(embed_dim, args.nb_classes, max_norm=1)
+            model.task_head = LinearWithConstraint(head_in, args.nb_classes, max_norm=1)
         elif args.task_mod == 'Regression':
-            model.task_head = RegressionLayers(input_dim=embed_dim, hidden_dim=256, output_dim=1)
+            model.task_head = RegressionLayers(input_dim=head_in, hidden_dim=256, output_dim=1)
         elif args.task_mod == 'Retrieval':
-            model.task_head = LinearWithConstraint(embed_dim, 1024, max_norm=1)
+            model.task_head = LinearWithConstraint(head_in, 1024, max_norm=1)
     else:
         print("Unknown model name!")
         exit(0)
