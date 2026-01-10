@@ -14,9 +14,6 @@ import pickle
 import json
 import pdb
 
-proxy = 'http://127.0.0.1:7890'
-os.environ['http_proxy'] = proxy
-os.environ['https_proxy'] = proxy
 cuda_device_count = torch.cuda.device_count()
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
